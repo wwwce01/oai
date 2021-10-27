@@ -208,6 +208,7 @@ typedef enum {
   OCM,
   UDP_,
   GTPU,
+  SDAP,
   SPGW,
   S1AP,
   F1AP,

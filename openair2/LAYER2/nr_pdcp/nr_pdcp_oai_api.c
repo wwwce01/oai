@@ -36,7 +36,7 @@
 #include "pdcp.h"
 #include "LAYER2/nr_rlc/nr_rlc_oai_api.h"
 #include <openair3/ocp-gtpu/gtp_itf.h>
-#include "openair2/SDAP/nr_sdap/nr_sdap_gnb.h"
+#include "openair2/SDAP/nr_sdap/nr_sdap.h"
 
 #define TODO do { \
     printf("%s:%d:%s: todo\n", __FILE__, __LINE__, __FUNCTION__); \
@@ -282,7 +282,7 @@ static void *enb_tun_read_thread(void *_)
 static void *ue_tun_read_thread(void *_)
 {
   extern int nas_sock_fd[];
-  char rx_buf[NL_MAX_PAYLOAD];
+  char rx_buf[NL_MAX_PAYLOAD-SDAP_HDR_LENGTH];
   int len;
   int rnti;
   protocol_ctxt_t ctxt;
@@ -290,7 +290,7 @@ static void *ue_tun_read_thread(void *_)
   int rb_id = 1;
   pthread_setname_np( pthread_self(),"ue_tun_read"); 
   while (1) {
-    len = read(nas_sock_fd[0], &rx_buf, NL_MAX_PAYLOAD);
+    len = read(nas_sock_fd[0], &rx_buf, NL_MAX_PAYLOAD-SDAP_HDR_LENGTH);
     if (len == -1) {
       LOG_E(PDCP, "%s:%d:%s: fatal\n", __FILE__, __LINE__, __FUNCTION__);
       exit(1);
@@ -315,9 +315,12 @@ static void *ue_tun_read_thread(void *_)
 
     ctxt.rnti = rnti;
 
-    pdcp_data_req(&ctxt, SRB_FLAG_NO, rb_id, RLC_MUI_UNDEFINED,
-                  RLC_SDU_CONFIRM_NO, len, (unsigned char *)rx_buf,
-                  PDCP_TRANSMISSION_MODE_DATA, NULL, NULL);
+    ctxt.sdap.dc = SDAP_HDR_UL_DATA_PDU;
+    ctxt.sdap.qfi = 7;
+
+    sdap_data_req(&ctxt, SRB_FLAG_NO, rb_id, RLC_MUI_UNDEFINED,
+                      RLC_SDU_CONFIRM_NO, len, (unsigned char *)rx_buf,
+                      PDCP_TRANSMISSION_MODE_DATA, NULL, NULL);
   }
 
   return NULL;
@@ -432,34 +435,23 @@ uint64_t pdcp_module_init(uint64_t _pdcp_optmask)
       netlink_init();
     }
   }
+
   return pdcp_optmask ;
 }
 
 static void deliver_sdu_drb(void *_ue, nr_pdcp_entity_t *entity,
                             char *buf, int size)
 {
-  extern int nas_sock_fd[];
-  int len;
+  /* extern int nas_sock_fd[];
+  int len; */
   nr_pdcp_ue_t *ue = _ue;
-  MessageDef  *message_p;
-  uint8_t     *gtpu_buffer_p;
   int rb_id;
   int i;
 
   if(IS_SOFTMODEM_NOS1 || UE_NAS_USE_TUN){
-    LOG_D(PDCP, "IP packet received, to be sent to TUN interface");
-
-    if(entity->has_sdapDLheader){
-      size -= SDAP_HDR_LENGTH;
-      len = write(nas_sock_fd[0], &buf[SDAP_HDR_LENGTH], size);
-    } else {
-      len = write(nas_sock_fd[0], buf, size);
-    }
-
-    if (len != size) {
-      LOG_E(PDCP, "%s:%d:%s: fatal\n", __FILE__, __LINE__, __FUNCTION__);
-    }
+    LOG_D(PDCP, "IP packet received, to be sent to TUN interface\n");
     
+    sdap_data_ind(entity, ue->rnti, buf, size);
   }
   else{
     for (i = 0; i < 5; i++) {
@@ -475,26 +467,8 @@ static void deliver_sdu_drb(void *_ue, nr_pdcp_entity_t *entity,
 
     rb_found:
     {
-      int offset=0;
-      if (entity->has_sdap == 1 && entity->has_sdapULheader == 1) offset = 1; // this is the offset of the SDAP header in bytes
-
-      gtpu_buffer_p = itti_malloc(TASK_PDCP_ENB, TASK_GTPV1_U,
-                                  size + GTPU_HEADER_OVERHEAD_MAX - offset);
-      AssertFatal(gtpu_buffer_p != NULL, "OUT OF MEMORY");
-      memcpy(&gtpu_buffer_p[GTPU_HEADER_OVERHEAD_MAX], buf+offset, size-offset);
-      message_p = itti_alloc_new_message(TASK_PDCP_ENB, 0, GTPV1U_GNB_TUNNEL_DATA_REQ);
-      AssertFatal(message_p != NULL, "OUT OF MEMORY");
-      GTPV1U_GNB_TUNNEL_DATA_REQ(message_p).buffer              = gtpu_buffer_p;
-      GTPV1U_GNB_TUNNEL_DATA_REQ(message_p).length              = size-offset;
-      GTPV1U_GNB_TUNNEL_DATA_REQ(message_p).offset              = GTPU_HEADER_OVERHEAD_MAX;
-      GTPV1U_GNB_TUNNEL_DATA_REQ(message_p).rnti                = ue->rnti;
-      GTPV1U_GNB_TUNNEL_DATA_REQ(message_p).pdusession_id       = entity->pdusession_id;
-      if (offset==1) {
-        LOG_I(PDCP, "%s() (drb %d) SDAP header %2x\n",__func__, rb_id, buf[0]);
-        sdap_gnb_ul_header_handler(buf[0]); // Handler for the UL gNB SDAP Header
-      }
-      LOG_D(PDCP, "%s() (drb %d) sending message to gtp size %d\n", __func__, rb_id, size-offset);
-      itti_send_msg_to_task(TASK_VARIABLE, INSTANCE_DEFAULT, message_p);
+      LOG_D(PDCP, "%s() (drb %d) sending message to SDAP size %d\n", __func__, rb_id, size);
+      sdap_data_ind(entity, ue->rnti, buf, size);
    }
   }
 }
@@ -829,6 +803,8 @@ static void add_drb_am(int is_gnb, int rnti, struct NR_DRB_ToAddMod *s,
   int has_sdap = 0;
   int has_sdapULheader=0;
   int has_sdapDLheader=0;
+  boolean_t is_sdap_DefaultDRB = FALSE;
+  uint8_t mappedQFIs2Add=0;
   if (s->cnAssociation->present == NR_DRB_ToAddMod__cnAssociation_PR_eps_BearerIdentity)
      pdusession_id = s->cnAssociation->choice.eps_BearerIdentity;
   else {
@@ -840,6 +816,9 @@ static void add_drb_am(int is_gnb, int rnti, struct NR_DRB_ToAddMod *s,
     has_sdap = 1;
     has_sdapULheader = s->cnAssociation->choice.sdap_Config->sdap_HeaderUL == NR_SDAP_Config__sdap_HeaderUL_present ? 1 : 0;
     has_sdapDLheader = s->cnAssociation->choice.sdap_Config->sdap_HeaderDL == NR_SDAP_Config__sdap_HeaderDL_present ? 1 : 0;
+    is_sdap_DefaultDRB = s->cnAssociation->choice.sdap_Config->defaultDRB == TRUE ? 1 : 0;
+    mappedQFIs2Add = *(NR_QFI_t*)s->cnAssociation->choice.sdap_Config->mappedQoS_FlowsToAdd->list.array[0]; 
+    LOG_D(SDAP, "Captured mappedQoS_FlowsToAdd from RRC: %u \n", mappedQFIs2Add);
   }
   /* TODO(?): accept different UL and DL SN sizes? */
   if (sn_size_ul != sn_size_dl) {
@@ -860,6 +839,9 @@ static void add_drb_am(int is_gnb, int rnti, struct NR_DRB_ToAddMod *s,
     LOG_W(PDCP, "%s:%d:%s: warning DRB %d already exist for ue %d, do nothing\n",
           __FILE__, __LINE__, __FUNCTION__, drb_id, rnti);
   } else {
+
+    new_nr_sdap_entity(rnti, is_gnb, pdusession_id, is_sdap_DefaultDRB, drb_id, mappedQFIs2Add);
+
     pdcp_drb = new_nr_pdcp_entity(NR_PDCP_DRB_AM, is_gnb, drb_id,pdusession_id,has_sdap,
                                   has_sdapULheader,has_sdapDLheader,
                                   deliver_sdu_drb, ue, deliver_pdu_drb, ue,
