@@ -305,6 +305,8 @@ void nr_preprocessor_phytest(module_id_t module_id,
   }
 
   sched_ctrl->num_total_bytes = 0;
+  sched_ctrl->dl_lc_num = 1;
+  sched_ctrl->dl_lc_ids[sched_ctrl->dl_lc_num - 1] = DL_SCH_LCID_DTCH;
   const int lcid = DL_SCH_LCID_DTCH;
   const uint16_t rnti = UE_info->rnti[UE_id];
   /* update sched_ctrl->num_total_bytes so that postprocessor schedules data,
@@ -316,7 +318,7 @@ void nr_preprocessor_phytest(module_id_t module_id,
                                                     slot,
                                                     ENB_FLAG_YES,
                                                     MBMS_FLAG_NO,
-                                                    lcid,
+                                                    sched_ctrl->dl_lc_ids[sched_ctrl->dl_lc_num - 1],
                                                     0,
                                                     0);
   sched_ctrl->num_total_bytes += sched_ctrl->rlc_status[lcid].bytes_in_buffer;
