@@ -47,6 +47,7 @@
 #include "nr_unitary_defs.h"
 #include "OCG_vars.h"
 #include <openair2/LAYER2/MAC/mac_vars.h>
+#include <openair2/LAYER2/NR_MAC_COMMON/nr_mac_common.h>
 #include <openair2/RRC/LTE/rrc_vars.h>
 #include <executables/softmodem-common.h>
 #include <openair2/RRC/NR_UE/rrc_defs.h>
@@ -67,6 +68,7 @@ extern uint16_t prach_root_sequence_map0_3[838];
 openair0_config_t openair0_cfg[MAX_CARDS];
 //uint8_t nfapi_mode=0;
 uint64_t downlink_frequency[MAX_NUM_CCs][4];
+int32_t uplink_frequency_offset[MAX_NUM_CCs][4];
 uint16_t sl_ahead = 0;
 msc_interface_t msc_interface;
 uint32_t N_RB_DL = 106;

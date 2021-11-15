@@ -39,10 +39,10 @@
 #include "PHY/NR_TRANSPORT/nr_transport_proto.h"
 #include "PHY/NR_TRANSPORT/nr_transport_common_proto.h"
 #include "PHY/NR_TRANSPORT/nr_dlsch.h"
-#include "openair2/LAYER2/NR_MAC_gNB/mac_proto.h"
 #include "SCHED_NR/sched_nr.h"
 #include "common/utils/LOG/vcd_signal_dumper.h"
 #include "common/utils/LOG/log.h"
+#include "common/utils/nr/nr_common.h"
 #include <syscall.h>
 #include <openair2/UTIL/OPT/opt.h>
 
@@ -292,7 +292,8 @@ int nr_dlsch_encoding(PHY_VARS_gNB *gNB,
   }
   G = nr_get_G(nb_rb, nb_symb_sch, nb_re_dmrs, length_dmrs,mod_order,rel15->nrOfLayers);
 
-  LOG_D(NR_PHY,"dlsch coding A %d G %d (nb_rb %d, nb_symb_sch %d, nb_re_dmrs %d, length_dmrs %d, mod_order %d)\n", A,G, nb_rb,nb_symb_sch,nb_re_dmrs,length_dmrs,mod_order);
+  LOG_D(PHY,"dlsch coding A %d G %d (nb_rb %d, nb_symb_sch %d, nb_re_dmrs %d, length_dmrs %d, mod_order %d)\n", 
+        A,G, nb_rb,nb_symb_sch,nb_re_dmrs,length_dmrs,(int)mod_order);
 
   if (A > 3824) {
     // Add 24-bit crc (polynomial A) to payload

@@ -82,10 +82,6 @@ unsigned short config_frames[4] = {2,9,11,13};
 #include "enb_config.h"
 //#include "PHY/TOOLS/time_meas.h"
 
-#ifndef OPENAIR2
-  #include "UTIL/OTG/otg_vars.h"
-#endif
-
 
 #include "create_tasks.h"
 
@@ -524,6 +520,8 @@ int main ( int argc, char **argv )
   int CC_id = 0;
   int ru_id;
   int node_type = ngran_eNB;
+
+  start_background_system();
 
   if ( load_configmodule(argc,argv,0) == NULL) {
     exit_fun("[SOFTMODEM] Error, configuration module init failed\n");

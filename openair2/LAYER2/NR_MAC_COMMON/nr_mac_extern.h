@@ -76,6 +76,9 @@ extern boolean_t pre_scd_activeUE[NUMBER_OF_UE_MAX];
 extern eNB_UE_STATS pre_scd_eNB_UE_stats[MAX_NUM_CCs][NUMBER_OF_UE_MAX];
 #endif*/
 
+extern const uint32_t NR_SHORT_BSR_TABLE[NR_SHORT_BSR_TABLE_SIZE];
+extern const uint32_t NR_LONG_BSR_TABLE[NR_LONG_BSR_TABLE_SIZE];
+
 //	Type0-PDCCH search space
 extern const int32_t table_38213_13_1_c1[16];
 extern const int32_t table_38213_13_1_c2[16];
@@ -137,14 +140,5 @@ extern const int32_t table_38213_13_12_c2[16];
 extern const float   table_38213_13_12_c3[16];
 
 extern const int32_t table_38213_10_1_1_c2[5];
-
-extern const uint8_t table_5_1_2_1_1_2_time_dom_res_alloc_A_dmrs_typeA_pos2[16][3];
-extern const uint8_t table_5_1_2_1_1_2_time_dom_res_alloc_A_dmrs_typeA_pos3[16][3];
-extern const uint8_t table_5_1_2_1_1_3_time_dom_res_alloc_A_extCP_dmrs_typeA_pos2[16][3];
-extern const uint8_t table_5_1_2_1_1_3_time_dom_res_alloc_A_extCP_dmrs_typeA_pos3[16][3];
-extern const uint8_t table_5_1_2_1_1_4_time_dom_res_alloc_B_dmrs_typeA_pos2[16][3];
-extern const uint8_t table_5_1_2_1_1_4_time_dom_res_alloc_B_dmrs_typeA_pos3[16][3];
-extern const uint8_t table_5_1_2_1_1_5_time_dom_res_alloc_C_dmrs_typeA_pos2[16][3];
-extern const uint8_t table_5_1_2_1_1_5_time_dom_res_alloc_C_dmrs_typeA_pos3[16][3];
 
 #endif //DEF_H

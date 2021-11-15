@@ -66,10 +66,6 @@ unsigned short config_frames[4] = {2,9,11,13};
 
 //#include "PHY/TOOLS/time_meas.h"
 
-#ifndef OPENAIR2
-  #include "UTIL/OTG/otg_vars.h"
-#endif
-
 #include "intertask_interface.h"
 
 #include "PHY/INIT/phy_init.h"
@@ -692,15 +688,10 @@ int main( int argc, char **argv ) {
   // initialize mscgen log after ITTI
   MSC_INIT(MSC_E_UTRAN, ADDED_QUEUES_MAX+TASK_MAX);
   init_opt();
-#ifdef PDCP_USE_NETLINK
-
-  if(!IS_SOFTMODEM_NOS1)
-    netlink_init();
-
-#if defined(PDCP_USE_NETLINK_QUEUES)
-  pdcp_netlink_init();
-#endif
-#endif
+  if(PDCP_USE_NETLINK)
+    if(!IS_SOFTMODEM_NOS1)
+      netlink_init();
+  
 #ifndef PACKAGE_VERSION
 #  define PACKAGE_VERSION "UNKNOWN-EXPERIMENTAL"
 #endif
@@ -823,7 +814,8 @@ int main( int argc, char **argv ) {
   }
 
   printf("About to call end_configmodule() from %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
-  end_configmodule();
+  // We have to set PARAMFLAG_NOFREE on right paramters before re-enabling end_configmodule()
+  //end_configmodule();
   printf("Called end_configmodule() from %s() %s:%d\n", __FUNCTION__, __FILE__, __LINE__);
   // wait for end of program
   printf("TYPE <CTRL-C> TO TERMINATE\n");

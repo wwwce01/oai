@@ -6,6 +6,7 @@ PREFIX=/opt/oai-enb
 RRC_INACTIVITY_THRESHOLD=${RRC_INACTIVITY_THRESHOLD:-0}
 ENABLE_MEASUREMENT_REPORTS=${ENABLE_MEASUREMENT_REPORTS:-no}
 ENABLE_X2=${ENABLE_X2:-no}
+THREAD_PARALLEL_CONFIG=${THREAD_PARALLEL_CONFIG:-PARALLEL_SINGLE_THREAD}
 
 # Based another env var, pick one template to use
 if [[ -v USE_FDD_CU ]]; then ln -s $PREFIX/etc/cu.fdd.conf $PREFIX/etc/enb.conf; fi
@@ -45,11 +46,11 @@ done
 
 # Load the USRP binaries
 if [[ -v USE_B2XX ]]; then
-    /usr/lib/uhd/utils/uhd_images_downloader.py -t b2xx
+    $PREFIX/bin/uhd_images_downloader.py -t b2xx
 elif [[ -v USE_X3XX ]]; then
-    /usr/lib/uhd/utils/uhd_images_downloader.py -t x3xx
+    $PREFIX/bin/uhd_images_downloader.py -t x3xx
 elif [[ -v USE_N3XX ]]; then
-    /usr/lib/uhd/utils/uhd_images_downloader.py -t n3xx
+    $PREFIX/bin/uhd_images_downloader.py -t n3xx
 fi
 
 echo "=================================="
