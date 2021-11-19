@@ -59,18 +59,14 @@ void process_rlcBearerConfig(struct NR_CellGroupConfig__rlc_BearerToAddModList *
                              NR_UE_sched_ctrl_t *sched_ctrl) {
 
   if (rlc_bearer2release_list) {
-    uint8_t updated_lcids[NR_MAX_NUM_LCID] = {0};
-    uint8_t lc = 0;
     for (int i = 0; i < rlc_bearer2release_list->list.count; i++) {
       for (int idx = 0; idx < sched_ctrl->dl_lc_num; idx++) {
-        if (sched_ctrl->dl_lc_ids[idx] != *rlc_bearer2release_list->list.array[i]) {
-          updated_lcids[lc] = sched_ctrl->dl_lc_ids[idx];
-          lc++;
+        if (sched_ctrl->dl_lc_ids[idx] == *rlc_bearer2release_list->list.array[i]) {
+          const int remaining_lcs = sched_ctrl->dl_lc_num - idx - 1;
+          memmove(&sched_ctrl->dl_lc_ids[idx], &sched_ctrl->dl_lc_ids[idx + 1], sizeof(sched_ctrl->dl_lc_ids[idx]) * remaining_lcs);
         }
       }
     }
-    sched_ctrl->dl_lc_num = lc;
-    memcpy(sched_ctrl->dl_lc_ids, updated_lcids, sizeof(uint8_t)*NR_MAX_NUM_LCID);
   }
 
   if (rlc_bearer2add_list) {
