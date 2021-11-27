@@ -427,7 +427,7 @@ class Containerize():
 			lUserName = self.eNB2UserName
 			lPassWord = self.eNB2Password
 		lSsh.open(lIpAddr, lUserName, lPassWord)
-		lSsh.command('docker save ' + self.imageToCopy + ':' + imageTag + ' | gzip > ' + self.imageToCopy + '-' + imageTag + '.tar.gz', '\$', 60)
+		lSsh.command('docker save ' + self.imageToCopy + ':' + imageTag + ' | gzip > ' + self.imageToCopy + '-' + imageTag + '.tar.gz', '\$', 180)
 		lSsh.copyin(lIpAddr, lUserName, lPassWord, '~/' + self.imageToCopy + '-' + imageTag + '.tar.gz', '.')
 		lSsh.command('rm ' + self.imageToCopy + '-' + imageTag + '.tar.gz', '\$', 60)
 		lSsh.close()
@@ -447,8 +447,8 @@ class Containerize():
 			lPassWord = self.eNB2Password
 		lSsh.open(lIpAddr, lUserName, lPassWord)
 		lSsh.copyout(lIpAddr, lUserName, lPassWord, './' + self.imageToCopy + '-' + imageTag + '.tar.gz', '~')
-		lSsh.command('docker rmi ' + self.imageToCopy + ':' + imageTag, '\$', 10)
-		lSsh.command('docker load < ' + self.imageToCopy + '-' + imageTag + '.tar.gz', '\$', 60)
+		lSsh.command('docker rmi ' + self.imageToCopy + ':' + imageTag, '\$', 60)
+		lSsh.command('docker load < ' + self.imageToCopy + '-' + imageTag + '.tar.gz', '\$', 180)
 		lSsh.command('rm ' + self.imageToCopy + '-' + imageTag + '.tar.gz', '\$', 60)
 		lSsh.close()
 
